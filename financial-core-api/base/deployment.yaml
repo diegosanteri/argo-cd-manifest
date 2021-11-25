@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-core-api-deployment
+  labels:
+    app: financial-core-api
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: financial-core-api
+  strategy:
+    rollingUpdate:
+      maxSurge: 5
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: financial-core-api
+    spec:
+      containers:
+        - name: financial-core-api
+          image: IMAGE:TAG
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "1024Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "950m"
+          env:
+            - name: JAVA_OPTS
+              value: "-Dspring.profiles.active=env -Djava.util.concurrent.ForkJoinPool.common.parallelism=250 -XX:ParallelGCThreads=1 -XX:ConcGCThreads=1 -XX:CICompilerCount=2 -XX:+TieredCompilation -Xms512m -Xmx2048m -XX:+UseSerialGC -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:+UseStringDeduplication -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9010 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Duser.timezone=America/Sao_Paulo"
+            - name: SPRING_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: financial-core-api-config
+                  key: SPRING_REDIS_HOST
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /financial-core/actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 6
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

@@ -1,0 +1,8 @@
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: financial-core-api
+spec:
+  minReplicas: 1
+  maxReplicas: 2
